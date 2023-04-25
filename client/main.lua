@@ -44,19 +44,19 @@ AddEventHandler('esx_lscustom:cancelInstallMod', function()
 end)
 
 AddEventHandler('onClientResourceStop', function(resource)
-	if resource == GetCurrentResourceName() then
-		if lsMenuIsShowed then
-			TriggerEvent('esx_lscustom:cancelInstallMod')
-		end
-	end
+    if resource == GetCurrentResourceName() then
+        if lsMenuIsShowed then
+            TriggerEvent('esx_lscustom:cancelInstallMod')
+        end
+    end
 end)
 
 AddEventHandler('onResourceStop', function(resource)
-	if resource == GetCurrentResourceName() then
-		if lsMenuIsShowed then
-			TriggerEvent('esx_lscustom:cancelInstallMod')
-		end
-	end
+    if resource == GetCurrentResourceName() then
+        if lsMenuIsShowed then
+            TriggerEvent('esx_lscustom:cancelInstallMod')
+        end
+    end
 end)
 
 function OpenLSMenu(elems, menuName, menuTitle, parent)
@@ -89,7 +89,7 @@ function OpenLSMenu(elems, menuName, menuTitle, parent)
                             break
                         end
                     end
-                    
+
                     if isRimMod then
                         price = math.floor(vehiclePrice * data.current.price / 100)
                         TriggerServerEvent('esx_lscustom:buyMod', price)
@@ -115,7 +115,8 @@ function OpenLSMenu(elems, menuName, menuTitle, parent)
         if not found then
             GetAction(data.current)
         end
-    end, function(data, menu) -- on cancel
+    end, function(data, menu)
+        -- on cancel
         menu.close()
         TriggerEvent('esx_lscustom:cancelInstallMod')
 
@@ -130,7 +131,8 @@ function OpenLSMenu(elems, menuName, menuTitle, parent)
             TriggerServerEvent('esx_lscustom:stopModing', myCar.plate)
             myCar = {}
         end
-    end, function(data, menu) -- on change
+    end, function(data, menu)
+        -- on change
         UpdateMods(data.current)
     end)
 end
@@ -144,7 +146,8 @@ function UpdateMods(data)
         if data.wheelType then
             props['wheels'] = data.wheelType
 
-            if GetVehicleClass(vehicle) == 8 then -- Fix bug wheels for bikes.
+            if GetVehicleClass(vehicle) == 8 then
+                -- Fix bug wheels for bikes.
                 props['modBackWheels'] = data.modNum
             end
 
@@ -152,9 +155,9 @@ function UpdateMods(data)
             props = {}
         elseif data.modType == 'neonColor' then
             if data.modNum[1] == 0 and data.modNum[2] == 0 and data.modNum[3] == 0 then
-                props['neonEnabled'] = {false, false, false, false}
+                props['neonEnabled'] = { false, false, false, false }
             else
-                props['neonEnabled'] = {true, true, true, true}
+                props['neonEnabled'] = { true, true, true, true }
             end
             ESX.Game.SetVehicleProperties(vehicle, props)
             props = {}
@@ -187,7 +190,7 @@ function GetAction(data)
     local vehicle = GetVehiclePedIsIn(playerPed, false)
     local currentMods = ESX.Game.GetVehicleProperties(vehicle)
     if data.value == 'modSpeakers' or data.value == 'modTrunk' or data.value == 'modHydrolic' or data.value ==
-        'modEngineBlock' or data.value == 'modAirFilter' or data.value == 'modStruts' or data.value == 'modTank' then
+            'modEngineBlock' or data.value == 'modAirFilter' or data.value == 'modStruts' or data.value == 'modTank' then
         SetVehicleDoorOpen(vehicle, 4, false)
         SetVehicleDoorOpen(vehicle, 5, false)
     elseif data.value == 'modDoorSpeaker' then
@@ -224,14 +227,15 @@ function GetAction(data)
                         modType = k,
                         modNum = false
                     })
-                elseif v.modType == 'neonColor' or v.modType == 'tyreSmokeColor' then -- disable neon
+                elseif v.modType == 'neonColor' or v.modType == 'tyreSmokeColor' then
+                    -- disable neon
                     table.insert(elements, {
                         label = " " .. TranslateCap('by_default'),
                         modType = k,
-                        modNum = {0, 0, 0}
+                        modNum = { 0, 0, 0 }
                     })
                 elseif v.modType == 'color1' or v.modType == 'color2' or v.modType == 'pearlescentColor' or v.modType ==
-                    'wheelColor' then
+                        'wheelColor' then
                     local num = myCar[v.modType]
                     table.insert(elements, {
                         label = " " .. TranslateCap('by_default'),
@@ -260,12 +264,13 @@ function GetAction(data)
                     })
                 end
 
-                if v.modType == 14 then -- HORNS
+                if v.modType == 14 then
+                    -- HORNS
                     for j = 0, 51, 1 do
                         local _label = ''
                         if j == currentMods.modHorns then
                             _label = GetHornName(j) .. ' - <span style="color:cornflowerblue;">' .. TranslateCap('installed') ..
-                                         '</span>'
+                                    '</span>'
                         else
                             price = math.floor(vehiclePrice * v.price / 100)
                             _label = GetHornName(j) .. ' - <span style="color:green;">$' .. price .. ' </span>'
@@ -276,12 +281,13 @@ function GetAction(data)
                             modNum = j
                         })
                     end
-                elseif v.modType == 'plateIndex' then -- PLATES
+                elseif v.modType == 'plateIndex' then
+                    -- PLATES
                     for j = 0, 4, 1 do
                         local _label = ''
                         if j == currentMods.plateIndex then
                             _label = GetPlatesName(j) .. ' - <span style="color:cornflowerblue;">' .. TranslateCap('installed') ..
-                                         '</span>'
+                                    '</span>'
                         else
                             price = math.floor(vehiclePrice * v.price / 100)
                             _label = GetPlatesName(j) .. ' - <span style="color:green;">$' .. price .. ' </span>'
@@ -292,7 +298,8 @@ function GetAction(data)
                             modNum = j
                         })
                     end
-                elseif v.modType == 22 then -- NEON
+                elseif v.modType == 22 then
+                    -- NEON
                     local _label = ''
                     if currentMods.modXenon then
                         _label = TranslateCap('neon') .. ' - <span style="color:cornflowerblue;">' .. TranslateCap('installed') .. '</span>'
@@ -305,7 +312,8 @@ function GetAction(data)
                         modType = k,
                         modNum = true
                     })
-                elseif v.modType == 'xenonColor' then -- XENON COLOR
+                elseif v.modType == 'xenonColor' then
+                    -- XENON COLOR
                     local xenonColors = GetXenonColors()
                     price = math.floor(vehiclePrice * v.price / 100)
                     for i = 1, #xenonColors, 1 do
@@ -315,19 +323,21 @@ function GetAction(data)
                             modNum = xenonColors[i].index
                         })
                     end
-                elseif v.modType == 'neonColor' or v.modType == 'tyreSmokeColor' then -- NEON & SMOKE COLOR
+                elseif v.modType == 'neonColor' or v.modType == 'tyreSmokeColor' then
+                    -- NEON & SMOKE COLOR
                     local neons = GetNeons()
                     price = math.floor(vehiclePrice * v.price / 100)
                     for i = 1, #neons, 1 do
                         table.insert(elements, {
                             label = '<span style="color:rgb(' .. neons[i].r .. ',' .. neons[i].g .. ',' .. neons[i].b ..
-                                ');">' .. neons[i].label .. ' - <span style="color:green;">$' .. price .. '</span>',
+                                    ');">' .. neons[i].label .. ' - <span style="color:green;">$' .. price .. '</span>',
                             modType = k,
-                            modNum = {neons[i].r, neons[i].g, neons[i].b}
+                            modNum = { neons[i].r, neons[i].g, neons[i].b }
                         })
                     end
                 elseif v.modType == 'color1' or v.modType == 'color2' or v.modType == 'pearlescentColor' or v.modType ==
-                    'wheelColor' then -- RESPRAYS
+                        'wheelColor' then
+                    -- RESPRAYS
                     local colors = GetColors(data.color)
                     for j = 1, #colors, 1 do
                         local _label = ''
@@ -339,12 +349,13 @@ function GetAction(data)
                             modNum = colors[j].index
                         })
                     end
-                elseif v.modType == 'windowTint' then -- WINDOWS TINT
+                elseif v.modType == 'windowTint' then
+                    -- WINDOWS TINT
                     for j = 1, 5, 1 do
                         local _label = ''
                         if j == currentMods.modHorns then
                             _label = GetWindowName(j) .. ' - <span style="color:cornflowerblue;">' .. TranslateCap('installed') ..
-                                         '</span>'
+                                    '</span>'
                         else
                             price = math.floor(vehiclePrice * v.price / 100)
                             _label = GetWindowName(j) .. ' - <span style="color:green;">$' .. price .. ' </span>'
@@ -355,7 +366,8 @@ function GetAction(data)
                             modNum = j
                         })
                     end
-                elseif v.modType == 23 then -- WHEELS RIM & TYPE
+                elseif v.modType == 23 then
+                    -- WHEELS RIM & TYPE
                     local props = {}
 
                     props['wheels'] = v.wheelType
@@ -368,11 +380,11 @@ function GetAction(data)
                             local _label = ''
                             if j == currentMods.modFrontWheels then
                                 _label = GetLabelText(modName) .. ' - <span style="color:cornflowerblue;">' ..
-                                             TranslateCap('installed') .. '</span>'
+                                        TranslateCap('installed') .. '</span>'
                             else
                                 price = math.floor(vehiclePrice * v.price / 100)
                                 _label = GetLabelText(modName) .. ' - <span style="color:green;">$' .. price ..
-                                             ' </span>'
+                                        ' </span>'
                             end
                             table.insert(elements, {
                                 label = _label,
@@ -389,8 +401,7 @@ function GetAction(data)
                     for j = 0, modCount, 1 do
                         local _label = ''
                         if j == currentMods[k] then
-                            _label =
-                                TranslateCap('level', j + 1) .. ' - <span style="color:cornflowerblue;">' .. TranslateCap('installed') ..
+                            _label = TranslateCap('level', j + 1) .. ' - <span style="color:cornflowerblue;">' .. TranslateCap('installed') ..
                                     '</span>'
                         else
                             price = math.floor(vehiclePrice * v.price[j + 1] / 100)
@@ -405,13 +416,13 @@ function GetAction(data)
                             break
                         end
                     end
-                elseif v.modType == 17 then -- TURBO
+                elseif v.modType == 17 then
+                    -- TURBO
                     local _label = ''
                     if currentMods[k] then
                         _label = 'Turbo - <span style="color:cornflowerblue;">' .. TranslateCap('installed') .. '</span>'
                     else
-                        _label =
-                            'Turbo - <span style="color:green;">$' .. math.floor(vehiclePrice * v.price[1] / 100) ..
+                        _label = 'Turbo - <span style="color:green;">$' .. math.floor(vehiclePrice * v.price[1] / 100) ..
                                 ' </span>'
                     end
                     table.insert(elements, {
@@ -427,11 +438,11 @@ function GetAction(data)
                             local _label = ''
                             if j == currentMods[k] then
                                 _label = GetLabelText(modName) .. ' - <span style="color:cornflowerblue;">' ..
-                                             TranslateCap('installed') .. '</span>'
+                                        TranslateCap('installed') .. '</span>'
                             else
                                 price = math.floor(vehiclePrice * v.price / 100)
                                 _label = GetLabelText(modName) .. ' - <span style="color:green;">$' .. price ..
-                                             ' </span>'
+                                        ' </span>'
                             end
                             table.insert(elements, {
                                 label = _label,
@@ -443,7 +454,7 @@ function GetAction(data)
                 end
             else
                 if data.value == 'primaryRespray' or data.value == 'secondaryRespray' or data.value ==
-                    'pearlescentRespray' or data.value == 'modFrontWheelsColor' then
+                        'pearlescentRespray' or data.value == 'modFrontWheelsColor' then
                     for i = 1, #Config.Colors, 1 do
                         if data.value == 'primaryRespray' then
                             table.insert(elements, {
@@ -536,7 +547,7 @@ CreateThread(function()
                                 local vehicle = GetVehiclePedIsIn(playerPed, false)
                                 FreezeEntityPosition(vehicle, true)
                                 myCar = ESX.Game.GetVehicleProperties(vehicle)
-                                
+
                                 local netId = NetworkGetNetworkIdFromEntity(vehicle)
                                 TriggerServerEvent('esx_lscustom:startModing', myCar, netId)
 
