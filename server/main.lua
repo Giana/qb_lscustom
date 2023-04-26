@@ -1,3 +1,5 @@
+local QBCore = exports['qb-core']:GetCoreObject()
+
 local Vehicles
 local Customs = {}
 
@@ -18,7 +20,7 @@ RegisterNetEvent('esx_lscustom:stopModing', function(plate)
     end
 end)
 
-AddEventHandler('esx:playerDropped', function(src)
+RegisterNetEvent('esx_lscustom:playerDropped', function(src)
     src = tostring(src)
     local playersCount = #GetPlayers()
     if Customs[src] then
@@ -38,7 +40,7 @@ end)
 
 RegisterNetEvent('esx_lscustom:buyMod', function(price)
     local source = source
-    local xPlayer = ESX.GetPlayerFromId(source)
+    local xPlayer = QBCore.Functions.GetPlayer(source)
     price = tonumber(price)
 
     if not xPlayer then
@@ -46,35 +48,35 @@ RegisterNetEvent('esx_lscustom:buyMod', function(price)
     end
 
     if Config.IsMechanicJobOnly then
-        local societyAccount
-
-        TriggerEvent('esx_addonaccount:getSharedAccount', 'society_mechanic', function(account)
-            societyAccount = account
-        end)
-
-        if price < societyAccount.money then
+        local societyAccount = exports['qb-management']:GetAccount('mechanic')
+        if price < societyAccount then
             TriggerClientEvent('esx_lscustom:installMod', source)
-            TriggerClientEvent('esx:showNotification', source, TranslateCap('purchased'))
-            societyAccount.removeMoney(price)
+            TriggerClientEvent('QBCore:Notify', source, Lang:t('purchased'), 'success')
+            exports['qb-management']:RemoveMoney('mechanic', price)
         else
             TriggerClientEvent('esx_lscustom:cancelInstallMod', source)
-            TriggerClientEvent('esx:showNotification', source, TranslateCap('not_enough_money'))
+            TriggerClientEvent('QBCore:Notify', source, Lang:t('not_enough_money'), 'error')
         end
     else
-        if price < xPlayer.getMoney() then
+        if price < xPlayer.Functions.GetMoney('cash') then
             TriggerClientEvent('esx_lscustom:installMod', source)
-            TriggerClientEvent('esx:showNotification', source, TranslateCap('purchased'))
-            xPlayer.removeMoney(price, "LSC Purchase")
+            TriggerClientEvent('QBCore:Notify', source, Lang:t('purchased'), 'success')
+            xPlayer.Functions.RemoveMoney('cash', price, "LSC Purchase")
+        elseif price < xPlayer.Functions.GetMoney('bank') then
+            TriggerClientEvent('esx_lscustom:installMod', source)
+            TriggerClientEvent('QBCore:Notify', source, Lang:t('purchased'), 'success')
+            xPlayer.Functions.RemoveMoney('bank', price, "LSC Purchase")
         else
             TriggerClientEvent('esx_lscustom:cancelInstallMod', source)
-            TriggerClientEvent('esx:showNotification', source, TranslateCap('not_enough_money'))
+            TriggerClientEvent('QBCore:Notify', source, Lang:t('not_enough_money'), 'error')
         end
     end
+    TriggerClientEvent('esx_lscustom:closeDoors', source)
 end)
 
 RegisterNetEvent('esx_lscustom:refreshOwnedVehicle', function(vehicleProps, netId)
     local src = tostring(source)
-    local xPlayer = ESX.GetPlayerFromId(source)
+    local xPlayer = QBCore.Functions.GetPlayer(source)
 
     if not vehicleProps then
         return print('^3[WARNING]^0 The vehicle Props could\'nt be found.')
@@ -90,12 +92,12 @@ RegisterNetEvent('esx_lscustom:refreshOwnedVehicle', function(vehicleProps, netI
         return print('^3[WARNING]^0 The player could\'nt be found.')
     end
 
-    MySQL.single('SELECT vehicle FROM owned_vehicles WHERE plate = ?', { vehicleProps.plate },
+    MySQL.single('SELECT vehicle FROM player_vehicles WHERE plate = ?', { vehicleProps.plate },
             function(result)
                 if result then
-                    local vehicle = json.decode(result.vehicle)
-                    if vehicleProps.model == vehicle.model then
-                        MySQL.update('UPDATE owned_vehicles SET vehicle = ? WHERE plate = ?', { json.encode(vehicleProps), vehicleProps.plate })
+                    local vehicleModelHash = GetHashKey(result.vehicle)
+                    if vehicleProps.model == vehicleModelHash then
+                        MySQL.update('UPDATE player_vehicles SET mods = ? WHERE plate = ?', { json.encode(vehicleProps), vehicleProps.plate })
                         if Customs[src] then
                             if Customs[src][tostring(vehicleProps.plate)] then
                                 Customs[src][tostring(vehicleProps.plate)].props = vehicleProps
@@ -112,15 +114,8 @@ RegisterNetEvent('esx_lscustom:refreshOwnedVehicle', function(vehicleProps, netI
                             Entity(veh).state:set("VehicleProperties", vehicleProps, true)
                         end
                     else
-                        print(('[^3WARNING^7] Player ^5%s^7 Attempted To upgrade with mismatching vehicle model'):format(xPlayer.source))
+                        print(('[^3WARNING^7] Player ^5%s^7 Attempted To upgrade with mismatching vehicle model'):format(xPlayer.name))
                     end
                 end
             end)
-end)
-
-ESX.RegisterServerCallback('esx_lscustom:getVehiclesPrices', function(source, cb)
-    if not Vehicles then
-        Vehicles = MySQL.query.await('SELECT model, price FROM vehicles')
-    end
-    cb(Vehicles)
 end)

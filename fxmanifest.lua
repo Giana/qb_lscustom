@@ -1,25 +1,23 @@
-fx_version 'adamant'
+fx_version 'cerulean'
 
 game 'gta5'
 
-description 'ESX LS Customs'
+description 'ESX LS Customs (Converted to QB LS Customs by Giana - github.com/Giana)'
 lua54 'yes'
 version '1.0'
-legacyversion '1.9.1'
 
-shared_script '@es_extended/imports.lua'
+shared_scripts {
+    '@qb-core/shared/locale.lua',
+    'locales/en.lua',
+}
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    '@es_extended/locale.lua',
-    'locales/*.lua',
     'config.lua',
     'server/main.lua'
 }
 
 client_scripts {
-    '@es_extended/locale.lua',
-    'locales/*.lua',
     'config.lua',
     'client/main.lua'
 }

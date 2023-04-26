@@ -1,18 +1,18 @@
-local Vehicles, myCar = {}, {}
+local QBCore = exports['qb-core']:GetCoreObject()
+
+local myCar = {}
 local lsMenuIsShowed, HintDisplayed, isInLSMarker = false, false, false
 
-RegisterNetEvent('esx:playerLoaded')
-AddEventHandler('esx:playerLoaded', function()
-    ESX.TriggerServerCallback('esx_lscustom:getVehiclesPrices', function(vehicles)
-        Vehicles = vehicles
-    end)
+RegisterNetEvent('QBCore:Client:OnPlayerUnload')
+AddEventHandler('QBCore:Client:OnPlayerUnload', function()
+    TriggerServerEvent('esx_lscustom:playerDropped')
 end)
 
 RegisterNetEvent('esx_lscustom:installMod')
 AddEventHandler('esx_lscustom:installMod', function()
     local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
     local NetId = NetworkGetNetworkIdFromEntity(vehicle)
-    myCar = ESX.Game.GetVehicleProperties(vehicle)
+    myCar = QBCore.Functions.GetVehicleProperties(vehicle)
     TriggerServerEvent('esx_lscustom:refreshOwnedVehicle', myCar, NetId)
 end)
 
@@ -20,7 +20,7 @@ RegisterNetEvent('esx_lscustom:restoreMods', function(netId, props)
     local xVehicle = NetworkGetEntityFromNetworkId(netId)
     if props ~= nil then
         if DoesEntityExist(xVehicle) then
-            ESX.Game.SetVehicleProperties(xVehicle, props)
+            QBCore.Functions.SetVehicleProperties(xVehicle, props)
         end
     end
 end)
@@ -31,7 +31,7 @@ AddEventHandler('esx_lscustom:cancelInstallMod', function()
     if (GetPedInVehicleSeat(vehicle, -1) ~= PlayerPedId()) then
         vehicle = GetPlayersLastVehicle(PlayerPedId())
     end
-    ESX.Game.SetVehicleProperties(vehicle, myCar)
+    QBCore.Functions.SetVehicleProperties(vehicle, myCar)
     if not (myCar.modTurbo) then
         ToggleVehicleMod(vehicle, 18, false)
     end
@@ -41,6 +41,63 @@ AddEventHandler('esx_lscustom:cancelInstallMod', function()
     if not (myCar.windowTint) then
         SetVehicleWindowTint(vehicle, 0)
     end
+end)
+
+RegisterNetEvent('esx_lscustom:menuSelect')
+AddEventHandler('esx_lscustom:menuSelect', function(data)
+    local elem = data.elem
+    local isRimMod, found = false, false
+    local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
+
+    if elem.modType == "modFrontWheels" then
+        isRimMod = true
+    end
+
+    for k, v in pairs(Config.Menus) do
+
+        if k == elem.modType or isRimMod then
+
+            if elem.label == Lang:t('by_default') or string.match(elem.label, Lang:t('installed')) then
+                QBCore.Functions.Notify(Lang:t('already_own', { s = elem.label }), 'primary')
+                myCar = QBCore.Functions.GetVehicleProperties(vehicle)
+                TriggerServerEvent('esx_lscustom:refreshOwnedVehicle', myCar, NetworkGetNetworkIdFromEntity(vehicle))
+            else
+                local vehicleModel = string.lower(GetDisplayNameFromVehicleModel(GetEntityModel(vehicle)))
+                local vehiclePrice = QBCore.Shared.Vehicles[vehicleModel]['price']
+
+                if isRimMod then
+                    price = math.floor(vehiclePrice * elem.price / 100)
+                    TriggerServerEvent('esx_lscustom:buyMod', price)
+                elseif v.modType == 11 or v.modType == 12 or v.modType == 13 or v.modType == 15 or v.modType == 16 then
+                    price = math.floor(vehiclePrice * v.price[elem.modNum + 1] / 100)
+                    TriggerServerEvent('esx_lscustom:buyMod', price)
+                elseif v.modType == 17 then
+                    price = math.floor(vehiclePrice * v.price[1] / 100)
+                    TriggerServerEvent('esx_lscustom:buyMod', price)
+                else
+                    price = math.floor(vehiclePrice * v.price / 100)
+                    TriggerServerEvent('esx_lscustom:buyMod', price)
+                end
+            end
+
+            closeMenu()
+            found = true
+            break
+        end
+
+    end
+
+    if not found then
+        GetAction(elem)
+    end
+
+    UpdateMods(elem)
+end)
+
+RegisterNetEvent('esx_lscustom:closeDoors')
+AddEventHandler('esx_lscustom:closeDoors', function()
+    local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
+    SetVehicleDoorsShut(vehicle, false)
 end)
 
 AddEventHandler('onClientResourceStop', function(resource)
@@ -59,82 +116,37 @@ AddEventHandler('onResourceStop', function(resource)
     end
 end)
 
-function OpenLSMenu(elems, menuName, menuTitle, parent)
-    ESX.UI.Menu.Open('default', GetCurrentResourceName(), menuName, {
-        title = menuTitle,
-        align = 'top-left',
-        elements = elems
-    }, function(data, menu)
-        local isRimMod, found = false, false
-        local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
+function closeMenu()
+    lsMenuIsShowed = false
+    exports['qb-menu']:closeMenu()
+end
 
-        if data.current.modType == "modFrontWheels" then
-            isRimMod = true
-        end
-
-        for k, v in pairs(Config.Menus) do
-
-            if k == data.current.modType or isRimMod then
-
-                if data.current.label == TranslateCap('by_default') or string.match(data.current.label, TranslateCap('installed')) then
-                    ESX.ShowNotification(TranslateCap('already_own', data.current.label))
-                    myCar = ESX.Game.GetVehicleProperties(vehicle)
-                    TriggerServerEvent('esx_lscustom:refreshOwnedVehicle', myCar, NetworkGetNetworkIdFromEntity(vehicle))
-                else
-                    local vehiclePrice = 50000
-
-                    for i = 1, #Vehicles, 1 do
-                        if GetEntityModel(vehicle) == joaat(Vehicles[i].model) then
-                            vehiclePrice = Vehicles[i].price
-                            break
-                        end
-                    end
-
-                    if isRimMod then
-                        price = math.floor(vehiclePrice * data.current.price / 100)
-                        TriggerServerEvent('esx_lscustom:buyMod', price)
-                    elseif v.modType == 11 or v.modType == 12 or v.modType == 13 or v.modType == 15 or v.modType == 16 then
-                        price = math.floor(vehiclePrice * v.price[data.current.modNum + 1] / 100)
-                        TriggerServerEvent('esx_lscustom:buyMod', price)
-                    elseif v.modType == 17 then
-                        price = math.floor(vehiclePrice * v.price[1] / 100)
-                        TriggerServerEvent('esx_lscustom:buyMod', price)
-                    else
-                        price = math.floor(vehiclePrice * v.price / 100)
-                        TriggerServerEvent('esx_lscustom:buyMod', price)
-                    end
-                end
-
-                menu.close()
-                found = true
-                break
-            end
-
-        end
-
-        if not found then
-            GetAction(data.current)
-        end
-    end, function(data, menu)
-        -- on cancel
-        menu.close()
-        TriggerEvent('esx_lscustom:cancelInstallMod')
-
-        local playerPed = PlayerPedId()
-        local vehicle = GetVehiclePedIsIn(playerPed, false)
-        SetVehicleDoorsShut(vehicle, false)
-
-        if parent == nil then
-            lsMenuIsShowed = false
-            local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
-            FreezeEntityPosition(vehicle, false)
-            TriggerServerEvent('esx_lscustom:stopModing', myCar.plate)
-            myCar = {}
-        end
-    end, function(data, menu)
-        -- on change
-        UpdateMods(data.current)
-    end)
+function OpenLSMenu(elems, menuTitle)
+    local menu = {
+        {
+            header = menuTitle,
+            isMenuHeader = true
+        }
+    }
+    for k, v in pairs(elems) do
+        menu[#menu + 1] = {
+            header = v.label,
+            params = {
+                event = 'esx_lscustom:menuSelect',
+                args = {
+                    elem = v
+                }
+            }
+        }
+    end
+    menu[#menu + 1] = {
+        header = Lang:t('cancel'),
+        params = {
+            event = closeMenu()
+        }
+    }
+    lsMenuIsShowed = true
+    exports['qb-menu']:openMenu(menu)
 end
 
 function UpdateMods(data)
@@ -151,7 +163,7 @@ function UpdateMods(data)
                 props['modBackWheels'] = data.modNum
             end
 
-            ESX.Game.SetVehicleProperties(vehicle, props)
+            QBCore.Functions.SetVehicleProperties(vehicle, props)
             props = {}
         elseif data.modType == 'neonColor' then
             if data.modNum[1] == 0 and data.modNum[2] == 0 and data.modNum[3] == 0 then
@@ -159,11 +171,11 @@ function UpdateMods(data)
             else
                 props['neonEnabled'] = { true, true, true, true }
             end
-            ESX.Game.SetVehicleProperties(vehicle, props)
+            QBCore.Functions.SetVehicleProperties(vehicle, props)
             props = {}
         elseif data.modType == 'tyreSmokeColor' then
             props['modSmokeEnabled'] = true
-            ESX.Game.SetVehicleProperties(vehicle, props)
+            QBCore.Functions.SetVehicleProperties(vehicle, props)
             props = {}
         elseif data.modType == 'xenonColor' then
             if data.modNum then
@@ -171,12 +183,12 @@ function UpdateMods(data)
             else
                 props['modXenon'] = false
             end
-            ESX.Game.SetVehicleProperties(vehicle, props)
+            QBCore.Functions.SetVehicleProperties(vehicle, props)
             props = {}
         end
 
         props[data.modType] = data.modNum
-        ESX.Game.SetVehicleProperties(vehicle, props)
+        QBCore.Functions.SetVehicleProperties(vehicle, props)
     end
 end
 
@@ -184,11 +196,10 @@ function GetAction(data)
     local elements = {}
     local menuName = ''
     local menuTitle = ''
-    local parent = nil
 
     local playerPed = PlayerPedId()
     local vehicle = GetVehiclePedIsIn(playerPed, false)
-    local currentMods = ESX.Game.GetVehicleProperties(vehicle)
+    local currentMods = QBCore.Functions.GetVehicleProperties(vehicle)
     if data.value == 'modSpeakers' or data.value == 'modTrunk' or data.value == 'modHydrolic' or data.value ==
             'modEngineBlock' or data.value == 'modAirFilter' or data.value == 'modStruts' or data.value == 'modTank' then
         SetVehicleDoorOpen(vehicle, 4, false)
@@ -202,14 +213,8 @@ function GetAction(data)
         SetVehicleDoorsShut(vehicle, false)
     end
 
-    local vehiclePrice = 50000
-
-    for i = 1, #Vehicles, 1 do
-        if GetEntityModel(vehicle) == joaat(Vehicles[i].model) then
-            vehiclePrice = Vehicles[i].price
-            break
-        end
-    end
+    local vehicleModel = string.lower(GetDisplayNameFromVehicleModel(GetEntityModel(vehicle)))
+    local vehiclePrice = QBCore.Shared.Vehicles[vehicleModel]['price']
 
     for k, v in pairs(Config.Menus) do
 
@@ -223,14 +228,14 @@ function GetAction(data)
 
                 if v.modType == 22 or v.modType == 'xenonColor' then
                     table.insert(elements, {
-                        label = " " .. TranslateCap('by_default'),
+                        label = " " .. Lang:t('by_default'),
                         modType = k,
                         modNum = false
                     })
                 elseif v.modType == 'neonColor' or v.modType == 'tyreSmokeColor' then
                     -- disable neon
                     table.insert(elements, {
-                        label = " " .. TranslateCap('by_default'),
+                        label = " " .. Lang:t('by_default'),
                         modType = k,
                         modNum = { 0, 0, 0 }
                     })
@@ -238,19 +243,19 @@ function GetAction(data)
                         'wheelColor' then
                     local num = myCar[v.modType]
                     table.insert(elements, {
-                        label = " " .. TranslateCap('by_default'),
+                        label = " " .. Lang:t('by_default'),
                         modType = k,
                         modNum = num
                     })
                 elseif v.modType == 17 then
                     table.insert(elements, {
-                        label = " " .. TranslateCap('no_turbo'),
+                        label = " " .. Lang:t('no_turbo'),
                         modType = k,
                         modNum = false
                     })
                 elseif v.modType == 23 then
                     table.insert(elements, {
-                        label = " " .. TranslateCap('by_default'),
+                        label = " " .. Lang:t('by_default'),
                         modType = "modFrontWheels",
                         modNum = -1,
                         wheelType = -1,
@@ -258,7 +263,7 @@ function GetAction(data)
                     })
                 else
                     table.insert(elements, {
-                        label = " " .. TranslateCap('by_default'),
+                        label = " " .. Lang:t('by_default'),
                         modType = k,
                         modNum = -1
                     })
@@ -269,7 +274,7 @@ function GetAction(data)
                     for j = 0, 51, 1 do
                         local _label = ''
                         if j == currentMods.modHorns then
-                            _label = GetHornName(j) .. ' - <span style="color:cornflowerblue;">' .. TranslateCap('installed') ..
+                            _label = GetHornName(j) .. ' - <span style="color:cornflowerblue;">' .. Lang:t('installed') ..
                                     '</span>'
                         else
                             price = math.floor(vehiclePrice * v.price / 100)
@@ -286,7 +291,7 @@ function GetAction(data)
                     for j = 0, 4, 1 do
                         local _label = ''
                         if j == currentMods.plateIndex then
-                            _label = GetPlatesName(j) .. ' - <span style="color:cornflowerblue;">' .. TranslateCap('installed') ..
+                            _label = GetPlatesName(j) .. ' - <span style="color:cornflowerblue;">' .. Lang:t('installed') ..
                                     '</span>'
                         else
                             price = math.floor(vehiclePrice * v.price / 100)
@@ -302,10 +307,10 @@ function GetAction(data)
                     -- NEON
                     local _label = ''
                     if currentMods.modXenon then
-                        _label = TranslateCap('neon') .. ' - <span style="color:cornflowerblue;">' .. TranslateCap('installed') .. '</span>'
+                        _label = Lang:t('neon') .. ' - <span style="color:cornflowerblue;">' .. Lang:t('installed') .. '</span>'
                     else
                         price = math.floor(vehiclePrice * v.price / 100)
-                        _label = TranslateCap('neon') .. ' - <span style="color:green;">$' .. price .. ' </span>'
+                        _label = Lang:t('neon') .. ' - <span style="color:green;">$' .. price .. ' </span>'
                     end
                     table.insert(elements, {
                         label = _label,
@@ -354,7 +359,7 @@ function GetAction(data)
                     for j = 1, 5, 1 do
                         local _label = ''
                         if j == currentMods.modHorns then
-                            _label = GetWindowName(j) .. ' - <span style="color:cornflowerblue;">' .. TranslateCap('installed') ..
+                            _label = GetWindowName(j) .. ' - <span style="color:cornflowerblue;">' .. Lang:t('installed') ..
                                     '</span>'
                         else
                             price = math.floor(vehiclePrice * v.price / 100)
@@ -371,7 +376,7 @@ function GetAction(data)
                     local props = {}
 
                     props['wheels'] = v.wheelType
-                    ESX.Game.SetVehicleProperties(vehicle, props)
+                    QBCore.Functions.SetVehicleProperties(vehicle, props)
 
                     local modCount = GetNumVehicleMods(vehicle, v.modType)
                     for j = 0, modCount, 1 do
@@ -380,7 +385,7 @@ function GetAction(data)
                             local _label = ''
                             if j == currentMods.modFrontWheels then
                                 _label = GetLabelText(modName) .. ' - <span style="color:cornflowerblue;">' ..
-                                        TranslateCap('installed') .. '</span>'
+                                        Lang:t('installed') .. '</span>'
                             else
                                 price = math.floor(vehiclePrice * v.price / 100)
                                 _label = GetLabelText(modName) .. ' - <span style="color:green;">$' .. price ..
@@ -401,11 +406,11 @@ function GetAction(data)
                     for j = 0, modCount, 1 do
                         local _label = ''
                         if j == currentMods[k] then
-                            _label = TranslateCap('level', j + 1) .. ' - <span style="color:cornflowerblue;">' .. TranslateCap('installed') ..
+                            _label = Lang:t('level', { s = j + 1 }) .. ' - <span style="color:cornflowerblue;">' .. Lang:t('installed') ..
                                     '</span>'
                         else
                             price = math.floor(vehiclePrice * v.price[j + 1] / 100)
-                            _label = TranslateCap('level', j + 1) .. ' - <span style="color:green;">$' .. price .. ' </span>'
+                            _label = Lang:t('level', { s = j + 1 }) .. ' - <span style="color:green;">$' .. price .. ' </span>'
                         end
                         table.insert(elements, {
                             label = _label,
@@ -420,7 +425,7 @@ function GetAction(data)
                     -- TURBO
                     local _label = ''
                     if currentMods[k] then
-                        _label = 'Turbo - <span style="color:cornflowerblue;">' .. TranslateCap('installed') .. '</span>'
+                        _label = 'Turbo - <span style="color:cornflowerblue;">' .. Lang:t('installed') .. '</span>'
                     else
                         _label = 'Turbo - <span style="color:green;">$' .. math.floor(vehiclePrice * v.price[1] / 100) ..
                                 ' </span>'
@@ -438,7 +443,7 @@ function GetAction(data)
                             local _label = ''
                             if j == currentMods[k] then
                                 _label = GetLabelText(modName) .. ' - <span style="color:cornflowerblue;">' ..
-                                        TranslateCap('installed') .. '</span>'
+                                        Lang:t('installed') .. '</span>'
                             else
                                 price = math.floor(vehiclePrice * v.price / 100)
                                 _label = GetLabelText(modName) .. ' - <span style="color:green;">$' .. price ..
@@ -501,7 +506,7 @@ function GetAction(data)
         return a.label < b.label
     end)
 
-    OpenLSMenu(elements, menuName, menuTitle, parent)
+    OpenLSMenu(elements, menuTitle)
 end
 
 -- Blips
@@ -529,8 +534,9 @@ CreateThread(function()
         if IsPedInAnyVehicle(playerPed, false) then
             local coords = GetEntityCoords(playerPed)
             local currentZone, zone, lastZone
+            local playerJob = QBCore.Functions.GetPlayerData().job
 
-            if (ESX.PlayerData.job and ESX.PlayerData.job.name == 'mechanic') or not Config.IsMechanicJobOnly then
+            if (playerJob and playerJob.name == 'mechanic') or not Config.IsMechanicJobOnly then
                 for k, v in pairs(Config.Zones) do
                     local zonePos = vector3(v.Pos.x, v.Pos.y, v.Pos.z)
                     if #(coords - zonePos) < 10.0 then
@@ -539,19 +545,18 @@ CreateThread(function()
                         if not lsMenuIsShowed then
                             if not HintDisplayed then
                                 HintDisplayed = true
-                                ESX.TextUI(v.Hint)
+                                SetTextComponentFormat("STRING")
+                                AddTextComponentString(v.Hint)
+                                DisplayHelpTextFromStringLabel(0, 0, 1, 20000)
                             end
                             if IsControlJustReleased(0, 38) then
-                                lsMenuIsShowed = true
-
                                 local vehicle = GetVehiclePedIsIn(playerPed, false)
-                                FreezeEntityPosition(vehicle, true)
-                                myCar = ESX.Game.GetVehicleProperties(vehicle)
+                                myCar = QBCore.Functions.GetVehicleProperties(vehicle)
 
                                 local netId = NetworkGetNetworkIdFromEntity(vehicle)
                                 TriggerServerEvent('esx_lscustom:startModing', myCar, netId)
 
-                                ESX.UI.Menu.CloseAll()
+                                closeMenu()
                                 GetAction({
                                     value = 'main'
                                 })
@@ -580,7 +585,7 @@ CreateThread(function()
                 end
                 if not Near and HintDisplayed then
                     HintDisplayed = false
-                    ESX.HideUI()
+                    closeMenu()
                 end
             end
         end
