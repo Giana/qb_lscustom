@@ -1,7 +1,13 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
-local myCar = {}
+local Vehicles, myCar = {}, {}
 local lsMenuIsShowed, HintDisplayed, isInLSMarker = false, false, false
+
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    QBCore.Functions.TriggerCallback('esx_lscustom:getVehiclesPrices', function(vehicles)
+        Vehicles = vehicles
+    end)
+end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload')
 AddEventHandler('QBCore:Client:OnPlayerUnload', function()
@@ -62,9 +68,14 @@ AddEventHandler('esx_lscustom:menuSelect', function(data)
                 myCar = QBCore.Functions.GetVehicleProperties(vehicle)
                 TriggerServerEvent('esx_lscustom:refreshOwnedVehicle', myCar, NetworkGetNetworkIdFromEntity(vehicle))
             else
-                local vehicleModel = string.lower(GetDisplayNameFromVehicleModel(GetEntityModel(vehicle)))
-                local vehiclePrice = QBCore.Shared.Vehicles[vehicleModel]['price']
+                local vehiclePrice = 50000
 
+                for i = 1, #Vehicles, 1 do
+                    if string.lower(GetDisplayNameFromVehicleModel(GetEntityModel(vehicle))) == Vehicles[i].vehicle_id then
+                        vehiclePrice = Vehicles[i].min_price
+                        break
+                    end
+                end
                 if isRimMod then
                     price = math.floor(vehiclePrice * elem.price / 100)
                     TriggerServerEvent('esx_lscustom:buyMod', price)
@@ -213,9 +224,14 @@ function GetAction(data)
         SetVehicleDoorsShut(vehicle, false)
     end
 
-    local vehicleModel = string.lower(GetDisplayNameFromVehicleModel(GetEntityModel(vehicle)))
-    local vehiclePrice = QBCore.Shared.Vehicles[vehicleModel]['price']
+    local vehiclePrice = 50000
 
+    for i = 1, #Vehicles, 1 do
+        if string.lower(GetDisplayNameFromVehicleModel(GetEntityModel(vehicle))) == Vehicles[i].vehicle_id then
+            vehiclePrice = Vehicles[i].min_price
+            break
+        end
+    end
     for k, v in pairs(Config.Menus) do
 
         if data.value == k then

@@ -119,3 +119,10 @@ RegisterNetEvent('esx_lscustom:refreshOwnedVehicle', function(vehicleProps, netI
                 end
             end)
 end)
+
+QBCore.Functions.CreateCallback('esx_lscustom:getVehiclesPrices', function(source, cb)
+    if not Vehicles then
+        Vehicles = MySQL.query.await('SELECT vehicle_id, min_price FROM okokvehicleshop_vehicles')
+    end
+    cb(Vehicles)
+end)
