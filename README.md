@@ -1,19 +1,22 @@
-<h1 align='center'>[ESX] Lscustoms</a></h1><p align='center'><b><a href='https://discord.esx-framework.org/'>Discord</a> - <a href='https://documentation.esx-framework.org/legacy/installation'>Documentation</a></b></h5>
+# qb_lscustom
 
-Note: This README is from the original script, not this QBCore conversion.
+qb_lscustom is a script for FiveM QBCore, originally made for ESX by [ESX Framework](https://github.com/esx-framework) (accessible [here](https://github.com/esx-framework/esx_lscustom)).
 
-## Requirements
+<h1>INSTALLATION GUIDE</h1>
 
-- [esx_vehicleshop](https://github.com/esx-framework/esx_vehicleshop)
+1. Drop the qb_lscustom folder into your [standalone] folder (or whichever other ensured folder you want to use)
 
-## Legal
+<h1>CHANGES FROM ORIGINAL</h1>
 
-esx_lscustoms - The best LS Custom out there for FX
+- Works with QBCore rather than ESX
 
-Copyright (C) 2015-2023 Jérémie N'gadi
+**DEPENDENCIES**
+-----
+- [QBCore](https://github.com/qbcore-framework)
+    - [qb-core](https://github.com/qbcore-framework/qb-core)
+    - [qb-management](https://github.com/qbcore-framework/qb-management)
+    - [qb-menu](https://github.com/qbcore-framework/qb-menu)
 
-This program Is free software: you can redistribute it And/Or modify it under the terms Of the GNU General Public License As published by the Free Software Foundation, either version 3 Of the License, Or (at your option) any later version.
-
-This program Is distributed In the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty Of MERCHANTABILITY Or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License For more details.
-
-You should have received a copy Of the GNU General Public License along with this program. If Not, see http://www.gnu.org/licenses/.
+**CREDIT**
+-----
+This script is derived from the ESX version [esx_lscustom](https://github.com/esx-framework/esx_lscustom) by [ESX Framework](https://github.com/esx-framework).
